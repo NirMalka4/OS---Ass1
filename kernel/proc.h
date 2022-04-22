@@ -109,4 +109,9 @@ struct proc {
   uint mean_ticks;
   uint last_ticks;
   uint last_runable_time;
+
+  uint sleeping_time;
+  uint running_time;
+  uint runnable_time;
+  uint last_update_time;
 };

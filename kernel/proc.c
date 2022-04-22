@@ -248,7 +248,20 @@ userinit(void)
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
 
+  //calc thicks passed
+  int ticks /* = ???*/;
+  if(p->state == RUNNABLE){
+    p->runnable_time += ticks;
+  }
+  if(p->state == RUNNING){
+    p->running_time += ticks;
+  }
+  if(p->state == SLEEPING){
+    p->rsleeping_time += ticks;
+  }
+  //update means...
   p->state = RUNNABLE;
+  //p->last_update_time = ticks;
 
   /* FCFS */
   #ifdef FCFS
@@ -329,7 +342,22 @@ fork(void)
 
   acquire(&np->lock);
 
+
+  //calc thicks passed
+  int ticks /* = ???*/;
+  if(p->state == RUNNABLE){
+    p->runnable_time += ticks;
+  }
+  if(p->state == RUNNING){
+    p->running_time += ticks;
+  }
+  if(p->state == SLEEPING){
+    p->rsleeping_time += ticks;
+  }
+  //update means...
+
   np->state = RUNNABLE;
+
   /* FCFS */
   #ifdef FCFS
   acquire(&tickslock);
@@ -393,6 +421,20 @@ exit(int status)
   acquire(&p->lock);
 
   p->xstate = status;
+
+
+  //calc thicks passed
+  int ticks /* = ???*/;
+  if(p->state == RUNNABLE){
+    p->runnable_time += ticks;
+  }
+  if(p->state == RUNNING){
+    p->running_time += ticks;
+  }
+  if(p->state == SLEEPING){
+    p->rsleeping_time += ticks;
+  }
+  //update means...
   p->state = ZOMBIE;
 
   release(&wait_lock);
@@ -504,6 +546,20 @@ scheduler(void)
             release(&c->lock);
          }
 
+
+        //calc thicks passed
+        int ticks /* = ???*/;
+        if(p->state == RUNNABLE){
+          p->runnable_time += ticks;
+        }
+        if(p->state == RUNNING){
+          p->running_time += ticks;
+        }
+        if(p->state == SLEEPING){
+          p->rsleeping_time += ticks;
+        }
+        //update means...
+
          hp->state = RUNNING;
          c->proc = hp;
 
@@ -545,6 +601,18 @@ scheduler(void)
             release(&c->lock);
          }
 
+          //calc thicks passed
+          int ticks /* = ???*/;
+          if(p->state == RUNNABLE){
+            p->runnable_time += ticks;
+          }
+          if(p->state == RUNNING){
+            p->running_time += ticks;
+          }
+          if(p->state == SLEEPING){
+            p->rsleeping_time += ticks;
+          }
+          //update means...
          hp->state = RUNNING;
          c->proc = hp;
 
@@ -558,6 +626,21 @@ scheduler(void)
         // Switch to chosen process.  It is the process's job
         // to release its lock and then reacquire it
         // before jumping back to us.
+
+
+        //calc thicks passed
+        int ticks /* = ???*/;
+        if(p->state == RUNNABLE){
+          p->runnable_time += ticks;
+        }
+        if(p->state == RUNNING){
+          p->running_time += ticks;
+        }
+        if(p->state == SLEEPING){
+          p->rsleeping_time += ticks;
+        }
+        //update means...
+
         p->state = RUNNING;
         c->proc = p;
         swtch(&c->context, &p->context);
@@ -607,6 +690,20 @@ yield(void)
 {
   struct proc *p = myproc();
   acquire(&p->lock);
+
+  //calc thicks passed
+  int ticks /* = ???*/;
+  if(p->state == RUNNABLE){
+    p->runnable_time += ticks;
+  }
+  if(p->state == RUNNING){
+    p->running_time += ticks;
+  }
+  if(p->state == SLEEPING){
+    p->rsleeping_time += ticks;
+  }
+  //update means...
+
   p->state = RUNNABLE;
   /* FCFS */
   #ifdef FCFS
@@ -659,6 +756,20 @@ sleep(void *chan, struct spinlock *lk)
 
   // Go to sleep.
   p->chan = chan;
+
+  //calc thicks passed
+  int ticks /* = ???*/;
+  if(p->state == RUNNABLE){
+    p->runnable_time += ticks;
+  }
+  if(p->state == RUNNING){
+    p->running_time += ticks;
+  }
+  if(p->state == SLEEPING){
+    p->rsleeping_time += ticks;
+  }
+  //update means...
+
   p->state = SLEEPING;
 
   sched();
@@ -682,6 +793,18 @@ wakeup(void *chan)
     if(p != mp){
       acquire(&p->lock);
       if(p->state == SLEEPING && p->chan == chan) {
+        //calc thicks passed
+        int ticks /* = ???*/;
+        if(p->state == RUNNABLE){
+          p->runnable_time += ticks;
+        }
+        if(p->state == RUNNING){
+          p->running_time += ticks;
+        }
+        if(p->state == SLEEPING){
+          p->rsleeping_time += ticks;
+        }
+        //update means...
         p->state = RUNNABLE;
         /* FCFS */
         #ifdef FCFS
@@ -709,6 +832,18 @@ kill(int pid)
       p->killed = 1;
       if(p->state == SLEEPING){
         // Wake process from sleep().
+        //calc thicks passed
+        int ticks /* = ???*/;
+        if(p->state == RUNNABLE){
+          p->runnable_time += ticks;
+        }
+        if(p->state == RUNNING){
+          p->running_time += ticks;
+        }
+        if(p->state == SLEEPING){
+          p->rsleeping_time += ticks;
+        }
+        //update means...
         p->state = RUNNABLE;
         /* FCFS */
         #ifdef FCFS
@@ -831,8 +966,13 @@ kill_system(void)
       {
         printf("Proc: %s number: %d KILL proc: %s number: %d\n",name, pid, p->name, p->pid);
         p->killed |= 1;
-        if(p->state == SLEEPING)
+        if(p->state == SLEEPING){
+          //calc thicks passed
+          int ticks /* = ???*/;
+          p->rsleeping_time += ticks;
+          //update means...
           p->state = RUNNABLE;
+        }
       }
       release(&p->lock);
   }
