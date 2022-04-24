@@ -7,13 +7,13 @@
 #include "defs.h" 
 
 
-int sleeping_processes_mean = 0;
-int running_processes_mean = 0;
-int runnable_processes_mean = 0;
-int pricess_count = 0;
-int program_time = 0;
-int cpu_utilization = 0;
-int start_time = 0;
+int sleeping_processes_mean;
+int running_processes_mean;
+int runnable_processes_mean;
+int process_count;
+int program_time;
+int cpu_utilization;
+int start_time;
 
 struct cpu cpus[NCPU];
 
@@ -59,6 +59,15 @@ void
 procinit(void)
 {
   struct proc *p;
+
+  sleeping_processes_mean = 0;
+  running_processes_mean = 0;
+  runnable_processes_mean = 0;
+  process_count = 1;
+  program_time = 0;
+  cpu_utilization = 0;
+  start_time = 0;
+
 
   acquire(&tickslock);
   start_time = ticks;
@@ -245,7 +254,6 @@ void
 userinit(void)
 {
   struct proc *p;
-  process_count++;
 
   p = allocproc();
   initproc = p;
@@ -309,6 +317,8 @@ fork(void)
   int i, pid;
   struct proc *np;
   struct proc *p = myproc();
+
+  process_count++;
 
   // Allocate process.
   if((np = allocproc()) == 0){
@@ -441,6 +451,10 @@ exit(int status)
     p->rsleeping_time += diff;
   }
   //update means...!!!!!!!
+
+  p->state = ZOMBIE;
+
+  //
   running_processes_mean = ((running_processes_mean * (process_count - 1)) + p->running_time) / process_count;
   runnable_processes_mean = ((runnable_processes_mean * (process_count - 1)) + p->runnable_time) / process_count;
   sleeping_processes_mean = ((sleeping_processes_mean * (process_count - 1)) + p->sleeping_time) / process_count;
@@ -449,8 +463,6 @@ exit(int status)
   acquire(&tickslock);
   cpu_utilization = program_time / (ticks - start_time);
   release(&tickslock);
-
-  p->state = ZOMBIE;
 
   release(&wait_lock);
 
@@ -1011,4 +1023,9 @@ kill_system(void)
       release(&p->lock);
   }
   return 0;
+} 
+
+void
+print_stats(void){
+  
 }
