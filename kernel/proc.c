@@ -4,7 +4,7 @@
 #include "riscv.h"
 #include "spinlock.h"
 #include "proc.h"
-#include "defs.h"
+#include "defs.h" 
 
 struct cpu cpus[NCPU];
 
