@@ -6,6 +6,12 @@
 #include "proc.h"
 #include "defs.h" 
 
+
+int sleeping_processes_mean = 0;
+int running_processes_mean = 0;
+int runnable_processes_mean = 0;
+int pricess_count = 0;
+
 struct cpu cpus[NCPU];
 
 struct proc proc[NPROC];
@@ -232,6 +238,7 @@ void
 userinit(void)
 {
   struct proc *p;
+  process_count++;
 
   p = allocproc();
   initproc = p;
@@ -248,7 +255,12 @@ userinit(void)
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
 
-  //to zero and curr ticks - last update
+  p->runnable_time = 0;
+  p->running_time = 0;
+  p -> sleeping_time = 0;
+  acquire(&tickslock);
+  p->last_update_time = ticks;
+  release(&tickslock);
   
   p->state = RUNNABLE;
 
@@ -333,6 +345,12 @@ fork(void)
 
 
   //init np
+  np->runnable_time = 0;
+  np->running_time = 0;
+  np -> sleeping_time = 0;
+  acquire(&tickslock);
+  np->last_update_time = ticks;
+  release(&tickslock);
 
   np->state = RUNNABLE;
 
@@ -402,17 +420,24 @@ exit(int status)
 
 
   //calc thicks passed
-  int ticks /* = ???*/;
+  acquire(&tickslock);
+  int diff = ticks - p->last_update_time;
+  release(&tickslock);
+
   if(p->state == RUNNABLE){
-    p->runnable_time += ticks;
+    p->runnable_time += diff;
   }
   if(p->state == RUNNING){
-    p->running_time += ticks;
+    p->running_time += diff;
   }
   if(p->state == SLEEPING){
-    p->rsleeping_time += ticks;
+    p->rsleeping_time += diff;
   }
   //update means...!!!!!!!
+  running_processes_mean = ((running_processes_mean * (process_count - 1)) + p->running_time) / process_count;
+  runnable_processes_mean = ((runnable_processes_mean * (process_count - 1)) + p->runnable_time) / process_count;
+  sleeping_processes_mean = ((sleeping_processes_mean * (process_count - 1)) + p->sleeping_time) / process_count;
+
   p->state = ZOMBIE;
 
   release(&wait_lock);
@@ -525,17 +550,20 @@ scheduler(void)
          }
 
 
-        //calc thicks passed
-        int ticks /* = ???*/;
-        if(p->state == RUNNABLE){
-          p->runnable_time += ticks;
-        }
-        if(p->state == RUNNING){
-          p->running_time += ticks;
-        }
-        if(p->state == SLEEPING){
-          p->rsleeping_time += ticks;
-        }
+          //calc thicks passed
+          acquire(&tickslock);
+          int diff = ticks - hp->last_update_time;
+          release(&tickslock);
+
+          if(hp->state == RUNNABLE){
+            hp->runnable_time += diff;
+          }
+          if(hp->state == RUNNING){
+            hp->running_time += diff;
+          }
+          if(hp->state == SLEEPING){
+            hp->rsleeping_time += diff;
+          }
 
          hp->state = RUNNING;
          c->proc = hp;
@@ -580,19 +608,19 @@ scheduler(void)
 
           //calc thicks passed
           acquire(&tickslock);
-          int curr_ticks = ticks;
+          int diff = ticks - p->last_update_time;
           release(&tickslock);
-          int diff = curr_ticks - p->last_update_time;
-          p->last_update_time = curr_ticks;
-          if(p->state == RUNNABLE){
-            p->runnable_time += diff;
+
+          if(hp->state == RUNNABLE){
+            hp->runnable_time += diff;
           }
-          if(p->state == RUNNING){
-            p->running_time += diff;
+          if(hp->state == RUNNING){
+            hp->running_time += diff;
           }
-          if(p->state == SLEEPING){
-            p->rsleeping_time += diff;
+          if(hp->state == SLEEPING){
+            hp->rsleeping_time += diff;
           }
+  
          hp->state = RUNNING;
          c->proc = hp;
 
@@ -609,15 +637,18 @@ scheduler(void)
 
 
         //calc thicks passed
-        int ticks /* = ???*/;
+        acquire(&tickslock);
+        int diff = ticks - p->last_update_time;
+        release(&tickslock);
+
         if(p->state == RUNNABLE){
-          p->runnable_time += ticks;
+          p->runnable_time += diff;
         }
         if(p->state == RUNNING){
-          p->running_time += ticks;
+          p->running_time += diff;
         }
         if(p->state == SLEEPING){
-          p->rsleeping_time += ticks;
+          p->rsleeping_time += diff;
         }
 
         p->state = RUNNING;
@@ -671,15 +702,18 @@ yield(void)
   acquire(&p->lock);
 
   //calc thicks passed
-  int ticks /* = ???*/;
+  acquire(&tickslock);
+  int diff = ticks - p->last_update_time;
+  release(&tickslock);
+
   if(p->state == RUNNABLE){
-    p->runnable_time += ticks;
+    p->runnable_time += diff;
   }
   if(p->state == RUNNING){
-    p->running_time += ticks;
+    p->running_time += diff;
   }
   if(p->state == SLEEPING){
-    p->rsleeping_time += ticks;
+    p->rsleeping_time += diff;
   }
 
   p->state = RUNNABLE;
@@ -736,15 +770,18 @@ sleep(void *chan, struct spinlock *lk)
   p->chan = chan;
 
   //calc thicks passed
-  int ticks /* = ???*/;
+  acquire(&tickslock);
+  int diff = ticks - p->last_update_time;
+  release(&tickslock);
+
   if(p->state == RUNNABLE){
-    p->runnable_time += ticks;
+    p->runnable_time += diff;
   }
   if(p->state == RUNNING){
-    p->running_time += ticks;
+    p->running_time += diff;
   }
   if(p->state == SLEEPING){
-    p->rsleeping_time += ticks;
+    p->rsleeping_time += diff;
   }
 
   p->state = SLEEPING;
@@ -771,15 +808,18 @@ wakeup(void *chan)
       acquire(&p->lock);
       if(p->state == SLEEPING && p->chan == chan) {
         //calc thicks passed
-        int ticks /* = ???*/;
+        acquire(&tickslock);
+        int diff = ticks - p->last_update_time;
+        release(&tickslock);
+
         if(p->state == RUNNABLE){
-          p->runnable_time += ticks;
+          p->runnable_time += diff;
         }
         if(p->state == RUNNING){
-          p->running_time += ticks;
+          p->running_time += diff;
         }
         if(p->state == SLEEPING){
-          p->rsleeping_time += ticks;
+          p->rsleeping_time += diff;
         }
         p->state = RUNNABLE;
         /* FCFS */
@@ -809,15 +849,18 @@ kill(int pid)
       if(p->state == SLEEPING){
         // Wake process from sleep().
         //calc thicks passed
-        int ticks /* = ???*/;
+        acquire(&tickslock);
+        int diff = ticks - p->last_update_time;
+        release(&tickslock);
+
         if(p->state == RUNNABLE){
-          p->runnable_time += ticks;
+          p->runnable_time += diff;
         }
         if(p->state == RUNNING){
-          p->running_time += ticks;
+          p->running_time += diff;
         }
         if(p->state == SLEEPING){
-          p->rsleeping_time += ticks;
+          p->rsleeping_time += diff;
         }
         
         p->state = RUNNABLE;
@@ -944,7 +987,10 @@ kill_system(void)
         p->killed |= 1;
         if(p->state == SLEEPING){
           //calc thicks passed
-          int ticks /* = ???*/;
+          //calc thicks passed
+          acquire(&tickslock);
+          int diff = ticks - p->last_update_time;
+          release(&tickslock);
           p->rsleeping_time += ticks;
           //update means...
           p->state = RUNNABLE;
