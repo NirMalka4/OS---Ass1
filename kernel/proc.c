@@ -11,6 +11,9 @@ int sleeping_processes_mean = 0;
 int running_processes_mean = 0;
 int runnable_processes_mean = 0;
 int pricess_count = 0;
+int program_time = 0;
+int cpu_utilization = 0;
+int start_time = 0;
 
 struct cpu cpus[NCPU];
 
@@ -56,7 +59,11 @@ void
 procinit(void)
 {
   struct proc *p;
-  
+
+  acquire(&tickslock);
+  start_time = ticks;
+  release(&tickslock);
+
   initlock(&pid_lock, "nextpid");
   initlock(&wait_lock, "wait_lock");
   for(p = proc; p < &proc[NPROC]; p++) {
@@ -437,6 +444,11 @@ exit(int status)
   running_processes_mean = ((running_processes_mean * (process_count - 1)) + p->running_time) / process_count;
   runnable_processes_mean = ((runnable_processes_mean * (process_count - 1)) + p->runnable_time) / process_count;
   sleeping_processes_mean = ((sleeping_processes_mean * (process_count - 1)) + p->sleeping_time) / process_count;
+  
+  program_time += p->running_time;
+  acquire(&tickslock);
+  cpu_utilization = program_time / (ticks - start_time);
+  release(&tickslock);
 
   p->state = ZOMBIE;
 
