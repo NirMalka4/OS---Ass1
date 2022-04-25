@@ -4,7 +4,7 @@
 
 
 void pause_system_dem(int interval, int pause_seconds, int loop_size) {
-    int pid = getpid(), i = 2;
+    int pid = getpid(), i = 5;
     while(i--)
         fork();
     const uint m = (loop_size >> 1);
@@ -20,7 +20,7 @@ void pause_system_dem(int interval, int pause_seconds, int loop_size) {
 }
 
 void kill_system_dem(int interval, int loop_size) {
-    int pid = getpid(), i = 2;
+    int pid = getpid(), i = 5;
     while(i--)
         fork();
     const uint m = (loop_size >> 1);
@@ -96,10 +96,10 @@ int
 main(int argc, char *argv[])
 {
     //set_economic_mode_dem(10, 100);
-    //pause_system_dem(10, 10, 100);
-    //kill_system_dem(10, 100);
+    pause_system_dem(10, 10, 100);
+    kill_system_dem(10, 100);
 
-    
+
     // env_large();
     // print_stats();
     // printf("******************************\n");
