@@ -457,11 +457,11 @@ exit(int status)
   runnable_processes_mean = ((runnable_processes_mean * (process_count - 1)) + p->runnable_time) / process_count;
   sleeping_processes_mean = ((sleeping_processes_mean * (process_count - 1)) + p->sleeping_time) / process_count;
 
-  printf("###%d, %d, %d###\n", p->running_time, p->runnable_time, p->sleeping_time);
+  //printf("###%d, %d, %d###\n", p->running_time, p->runnable_time, p->sleeping_time);
   
   program_time += p->running_time;
   //acquire(&tickslock);
-  printf("@@@%d, %d@@@\n", program_time, ticks - start_time);
+  //printf("@@@%d, %d@@@\n", program_time, ticks - start_time);
   cpu_utilization = program_time * 100 / (ticks - start_time);
   //release(&tickslock);
   
@@ -1044,6 +1044,6 @@ print_stats(void){
   printf("runnable time mean: %d\n", runnable_processes_mean);
   printf("sleeping time mean: %d\n", sleeping_processes_mean);
   printf("program time: %d\n", program_time);
-  printf("cpu utilization: %d\n", cpu_utilization);
+  printf("cpu utilization: %d (%d/%d)\n", cpu_utilization, program_time, ticks - start_time);
   printf("_______________________\n");
 }
