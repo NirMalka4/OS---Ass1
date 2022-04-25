@@ -63,15 +63,14 @@ procinit(void)
   sleeping_processes_mean = 0;
   running_processes_mean = 0;
   runnable_processes_mean = 0;
-  process_count = 1;
+  process_count = 0;
   program_time = 0;
   cpu_utilization = 0;
-  start_time = 0;
 
 
-  acquire(&tickslock);
-  start_time = ticks;
-  release(&tickslock);
+  //acquire(&tickslock);
+  
+  //release(&tickslock);
 
   initlock(&pid_lock, "nextpid");
   initlock(&wait_lock, "wait_lock");
@@ -79,6 +78,7 @@ procinit(void)
       initlock(&p->lock, "proc");
       p->kstack = KSTACK((int) (p - proc));
   }
+  start_time = ticks;
 }
 
 // Must be called with interrupts disabled,
@@ -273,9 +273,9 @@ userinit(void)
   p->runnable_time = 0;
   p->running_time = 0;
   p -> sleeping_time = 0;
-  acquire(&tickslock);
+  //acquire(&tickslock);
   p->last_update_time = ticks;
-  release(&tickslock);
+  //release(&tickslock);
   
   p->state = RUNNABLE;
 
@@ -318,7 +318,6 @@ fork(void)
   struct proc *np;
   struct proc *p = myproc();
 
-  process_count++;
 
   // Allocate process.
   if((np = allocproc()) == 0){
@@ -437,9 +436,9 @@ exit(int status)
 
 
   //calc thicks passed
-  acquire(&tickslock);
+  //acquire(&tickslock);
   int diff = ticks - p->last_update_time;
-  release(&tickslock);
+  //release(&tickslock);
   p->last_update_time = ticks;
 
   if(p->state == RUNNABLE){
@@ -452,20 +451,21 @@ exit(int status)
     p->sleeping_time += diff;
   }
   //update means...!!!!!!!
+  process_count++;
 
-  p->state = ZOMBIE;
-
-  //
-  running_processes_mean = ((running_processes_mean * (process_count - 1)) + p->running_time) / process_count;
+  running_processes_mean = ((running_processes_mean * (process_count - 1)) + p->running_time)/ process_count;
   runnable_processes_mean = ((runnable_processes_mean * (process_count - 1)) + p->runnable_time) / process_count;
   sleeping_processes_mean = ((sleeping_processes_mean * (process_count - 1)) + p->sleeping_time) / process_count;
+
+  printf("###%d, %d, %d###\n", p->running_time, p->runnable_time, p->sleeping_time);
   
   program_time += p->running_time;
-  acquire(&tickslock);
-  cpu_utilization = program_time / (ticks - start_time);
-
-
-  release(&tickslock);
+  //acquire(&tickslock);
+  printf("@@@%d, %d@@@\n", program_time, ticks - start_time);
+  cpu_utilization = program_time * 100 / (ticks - start_time);
+  //release(&tickslock);
+  
+  p->state = ZOMBIE;
 
   release(&wait_lock);
 
@@ -578,9 +578,9 @@ scheduler(void)
 
 
           //calc thicks passed
-          acquire(&tickslock);
+          //acquire(&tickslock);
           int diff = ticks - hp->last_update_time;
-          release(&tickslock);
+          //release(&tickslock);
           hp->last_update_time = ticks;
 
           if(hp->state == RUNNABLE){
@@ -596,15 +596,15 @@ scheduler(void)
          hp->state = RUNNING;
          c->proc = hp;
 
-         acquire(&tickslock);
+         //acquire(&tickslock);
          burst = ticks;
-         release(&tickslock);
+         //release(&tickslock);
 
          swtch(&c->context, &hp->context);
 
-         acquire(&tickslock);
+         //acquire(&tickslock);
          burst = ticks - burst;
-         release(&tickslock);
+         //release(&tickslock);
 
          hp->last_ticks = burst;
          hp->mean_ticks = ((10 - rate) * hp->mean_ticks + burst * rate) / 10;
@@ -635,9 +635,9 @@ scheduler(void)
          }
 
           //calc thicks passed
-          acquire(&tickslock);
+          //acquire(&tickslock);
           int diff = ticks - p->last_update_time;
-          release(&tickslock);
+          //release(&tickslock);
           p->last_update_time = ticks;
 
           if(hp->state == RUNNABLE){
@@ -666,9 +666,9 @@ scheduler(void)
 
 
         //calc thicks passed
-        acquire(&tickslock);
+        //acquire(&tickslock);
         int diff = ticks - p->last_update_time;
-        release(&tickslock);
+        //release(&tickslock);
         p->last_update_time = ticks;
 
 
@@ -733,9 +733,9 @@ yield(void)
   acquire(&p->lock);
 
   //calc thicks passed
-  acquire(&tickslock);
+  //acquire(&tickslock);
   int diff = ticks - p->last_update_time;
-  release(&tickslock);
+  //release(&tickslock);
   p->last_update_time = ticks;
 
   if(p->state == RUNNABLE){
@@ -751,9 +751,9 @@ yield(void)
   p->state = RUNNABLE;
   /* FCFS */
   #ifdef FCFS
-  acquire(&tickslock);
+  //acquire(&tickslock);
   p->last_runable_time = ticks;
-  release(&tickslock);
+  //release(&tickslock);
   #endif
 
   sched();
@@ -802,9 +802,9 @@ sleep(void *chan, struct spinlock *lk)
   p->chan = chan;
 
   //calc thicks passed
-  acquire(&tickslock);
+  //acquire(&tickslock);
   int diff = ticks - p->last_update_time;
-  release(&tickslock);
+  //release(&tickslock);
   p->last_update_time = ticks;
 
   if(p->state == RUNNABLE){
@@ -841,9 +841,9 @@ wakeup(void *chan)
       acquire(&p->lock);
       if(p->state == SLEEPING && p->chan == chan) {
         //calc thicks passed
-        acquire(&tickslock);
+        //acquire(&tickslock);
         int diff = ticks - p->last_update_time;
-        release(&tickslock);
+        //release(&tickslock);
         p->last_update_time = ticks;
 
         if(p->state == RUNNABLE){
@@ -858,9 +858,9 @@ wakeup(void *chan)
         p->state = RUNNABLE;
         /* FCFS */
         #ifdef FCFS
-        acquire(&tickslock);
+        //acquire(&tickslock);
         p->last_runable_time = ticks;
-        release(&tickslock);
+        //release(&tickslock);
         #endif
       }
       release(&p->lock);
@@ -883,9 +883,9 @@ kill(int pid)
       if(p->state == SLEEPING){
         // Wake process from sleep().
         //calc thicks passed
-        acquire(&tickslock);
+        //acquire(&tickslock);
         int diff = ticks - p->last_update_time;
-        release(&tickslock);
+        //release(&tickslock);
         p->last_update_time = ticks;
 
         if(p->state == RUNNABLE){
@@ -901,9 +901,9 @@ kill(int pid)
         p->state = RUNNABLE;
         /* FCFS */
         #ifdef FCFS
-        acquire(&tickslock);
+        //acquire(&tickslock);
         p->last_runable_time = ticks;
-        release(&tickslock);
+        //release(&tickslock);
         #endif
       }
       release(&p->lock);
@@ -990,9 +990,9 @@ pause_system(const int seconds)
   printf("Proc: %s, number: %d pause system\n", p->name, p->pid);
 
   paused |= 1;
-  acquire(&tickslock);
+  //acquire(&tickslock);
   pause_interval = ticks + (seconds * 10);
-  release(&tickslock);
+  //release(&tickslock);
 
   yield();
   return 0;
@@ -1023,9 +1023,9 @@ kill_system(void)
         if(p->state == SLEEPING){
           //calc thicks passed
           //calc thicks passed
-          acquire(&tickslock);
+          //acquire(&tickslock);
           int diff = ticks - p->last_update_time;
-          release(&tickslock);
+          //release(&tickslock);
           p->last_update_time = ticks;
           p->sleeping_time += diff;
           //update means...

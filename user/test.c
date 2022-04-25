@@ -58,14 +58,21 @@ void env(int size, int interval, char* env_name) {
     int pid;
     for (int i = 0; i < n_forks; i++) {
         pid = fork();
-        printf("%d", pid);
+        printf("***%d***", pid);
     }
     for (int i = 0; i < loop_size; i++) {
         if (i % loop_size / 1 == 0) {
         	if (pid == 0) {
-        		printf("***%s %d/%d completed.\n", env_name, i, loop_size);
+        		printf("%s %d/%d completed.\n", env_name, i, loop_size);
+                //sleep(50);
+                long x = 1;
+                for(long i = 0; i < 10000000; i++){
+                    x *= i;
+                }
         	} else {
-        		printf(" *** ");
+                int res;
+                wait(&res);
+        		printf(" ");
         	}
         }
         if (i % interval == 0) {
@@ -91,7 +98,8 @@ main(int argc, char *argv[])
     //kill_system_dem(10, 100);
     env_large();
     print_stats();
-    env_freq();
+    // env_freq();
+    // print_stats();
     exit(0);
 }
 
