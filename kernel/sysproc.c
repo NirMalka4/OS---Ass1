@@ -113,7 +113,8 @@ sys_kill_system(void)
   return kill_system();
 }
 
-void
+uint64
 sys_print_stats(void){
   print_stats();
+  return 0;
 }

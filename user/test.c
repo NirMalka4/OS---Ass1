@@ -51,11 +51,48 @@ void set_economic_mode_dem(int interval, int loop_size) {
 }
 */
 
+void env(int size, int interval, char* env_name) {
+    int result = 1;
+    int loop_size = 1000000;
+    int n_forks = 2;
+    int pid;
+    for (int i = 0; i < n_forks; i++) {
+        pid = fork();
+        printf("%d", pid);
+    }
+    for (int i = 0; i < loop_size; i++) {
+        if (i % loop_size / 1 == 0) {
+        	if (pid == 0) {
+        		printf("***%s %d/%d completed.\n", env_name, i, loop_size);
+        	} else {
+        		printf(" *** ");
+        	}
+        }
+        if (i % interval == 0) {
+            result = result * size;
+        }
+    }
+    printf("\n");
+}
+
+void env_large() {
+    env(1000000, 1000000, "env_large");
+}
+
+void env_freq() {
+    env(10, 10, "env_freq");
+}
+
 int
 main(int argc, char *argv[])
 {
     //set_economic_mode_dem(10, 100);
-    pause_system_dem(10, 10, 100);
-    kill_system_dem(10, 100);
+    //pause_system_dem(10, 10, 100);
+    //kill_system_dem(10, 100);
+    env_large();
+    print_stats();
+    env_freq();
     exit(0);
 }
+
+

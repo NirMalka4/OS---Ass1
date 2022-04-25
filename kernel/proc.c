@@ -440,6 +440,7 @@ exit(int status)
   acquire(&tickslock);
   int diff = ticks - p->last_update_time;
   release(&tickslock);
+  p->last_update_time = ticks;
 
   if(p->state == RUNNABLE){
     p->runnable_time += diff;
@@ -448,7 +449,7 @@ exit(int status)
     p->running_time += diff;
   }
   if(p->state == SLEEPING){
-    p->rsleeping_time += diff;
+    p->sleeping_time += diff;
   }
   //update means...!!!!!!!
 
@@ -462,6 +463,8 @@ exit(int status)
   program_time += p->running_time;
   acquire(&tickslock);
   cpu_utilization = program_time / (ticks - start_time);
+
+
   release(&tickslock);
 
   release(&wait_lock);
@@ -578,6 +581,7 @@ scheduler(void)
           acquire(&tickslock);
           int diff = ticks - hp->last_update_time;
           release(&tickslock);
+          hp->last_update_time = ticks;
 
           if(hp->state == RUNNABLE){
             hp->runnable_time += diff;
@@ -586,7 +590,7 @@ scheduler(void)
             hp->running_time += diff;
           }
           if(hp->state == SLEEPING){
-            hp->rsleeping_time += diff;
+            hp->sleeping_time += diff;
           }
 
          hp->state = RUNNING;
@@ -607,7 +611,7 @@ scheduler(void)
 
          c->proc = 0;
          // print for debug
-         printf("Proc: %s number: %d last_ticks: %d mean_ticks: %d\n", hp->name, hp->pid, hp->last_ticks, hp->mean_ticks);
+         //printf("Proc: %s number: %d last_ticks: %d mean_ticks: %d\n", hp->name, hp->pid, hp->last_ticks, hp->mean_ticks);
          release(&hp->lock);
         #elif FCFS
           /*
@@ -634,6 +638,7 @@ scheduler(void)
           acquire(&tickslock);
           int diff = ticks - p->last_update_time;
           release(&tickslock);
+          p->last_update_time = ticks;
 
           if(hp->state == RUNNABLE){
             hp->runnable_time += diff;
@@ -642,7 +647,7 @@ scheduler(void)
             hp->running_time += diff;
           }
           if(hp->state == SLEEPING){
-            hp->rsleeping_time += diff;
+            hp->sleeping_time += diff;
           }
   
          hp->state = RUNNING;
@@ -651,7 +656,7 @@ scheduler(void)
          swtch(&c->context, &hp->context);
         
          c->proc = 0;
-         printf("Proc: %s number: %d last_runable_time: %d\n", hp->name, hp->pid, hp->last_runable_time);
+         //printf("Proc: %s number: %d last_runable_time: %d\n", hp->name, hp->pid, hp->last_runable_time);
          release(&hp->lock);          
 
         #else
@@ -664,6 +669,8 @@ scheduler(void)
         acquire(&tickslock);
         int diff = ticks - p->last_update_time;
         release(&tickslock);
+        p->last_update_time = ticks;
+
 
         if(p->state == RUNNABLE){
           p->runnable_time += diff;
@@ -672,7 +679,7 @@ scheduler(void)
           p->running_time += diff;
         }
         if(p->state == SLEEPING){
-          p->rsleeping_time += diff;
+          p->sleeping_time += diff;
         }
 
         p->state = RUNNING;
@@ -729,6 +736,7 @@ yield(void)
   acquire(&tickslock);
   int diff = ticks - p->last_update_time;
   release(&tickslock);
+  p->last_update_time = ticks;
 
   if(p->state == RUNNABLE){
     p->runnable_time += diff;
@@ -737,7 +745,7 @@ yield(void)
     p->running_time += diff;
   }
   if(p->state == SLEEPING){
-    p->rsleeping_time += diff;
+    p->sleeping_time += diff;
   }
 
   p->state = RUNNABLE;
@@ -797,6 +805,7 @@ sleep(void *chan, struct spinlock *lk)
   acquire(&tickslock);
   int diff = ticks - p->last_update_time;
   release(&tickslock);
+  p->last_update_time = ticks;
 
   if(p->state == RUNNABLE){
     p->runnable_time += diff;
@@ -805,7 +814,7 @@ sleep(void *chan, struct spinlock *lk)
     p->running_time += diff;
   }
   if(p->state == SLEEPING){
-    p->rsleeping_time += diff;
+    p->sleeping_time += diff;
   }
 
   p->state = SLEEPING;
@@ -835,6 +844,7 @@ wakeup(void *chan)
         acquire(&tickslock);
         int diff = ticks - p->last_update_time;
         release(&tickslock);
+        p->last_update_time = ticks;
 
         if(p->state == RUNNABLE){
           p->runnable_time += diff;
@@ -843,7 +853,7 @@ wakeup(void *chan)
           p->running_time += diff;
         }
         if(p->state == SLEEPING){
-          p->rsleeping_time += diff;
+          p->sleeping_time += diff;
         }
         p->state = RUNNABLE;
         /* FCFS */
@@ -876,6 +886,7 @@ kill(int pid)
         acquire(&tickslock);
         int diff = ticks - p->last_update_time;
         release(&tickslock);
+        p->last_update_time = ticks;
 
         if(p->state == RUNNABLE){
           p->runnable_time += diff;
@@ -884,7 +895,7 @@ kill(int pid)
           p->running_time += diff;
         }
         if(p->state == SLEEPING){
-          p->rsleeping_time += diff;
+          p->sleeping_time += diff;
         }
         
         p->state = RUNNABLE;
@@ -1015,7 +1026,8 @@ kill_system(void)
           acquire(&tickslock);
           int diff = ticks - p->last_update_time;
           release(&tickslock);
-          p->rsleeping_time += ticks;
+          p->last_update_time = ticks;
+          p->sleeping_time += diff;
           //update means...
           p->state = RUNNABLE;
         }
@@ -1027,5 +1039,11 @@ kill_system(void)
 
 void
 print_stats(void){
-  
+  printf("_______________________\n");
+  printf("running time mean: %d\n", running_processes_mean);
+  printf("runnable time mean: %d\n", runnable_processes_mean);
+  printf("sleeping time mean: %d\n", sleeping_processes_mean);
+  printf("program time: %d\n", program_time);
+  printf("cpu utilization: %d\n", cpu_utilization);
+  printf("_______________________\n");
 }
